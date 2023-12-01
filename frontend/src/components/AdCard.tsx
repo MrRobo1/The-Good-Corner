@@ -6,7 +6,7 @@ export type AdCardProps = {
     title: string;
     imageUrl: string;
     price: number;
-    link: string;
+    link?: string;
     description: string;
     owner: string;
     location: string;

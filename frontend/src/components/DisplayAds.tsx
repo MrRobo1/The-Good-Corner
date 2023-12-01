@@ -29,6 +29,7 @@ const DisplayAds = ({ ads, title }: DisplayAdsType) => {
       <h2>{title}</h2>
       <section className="recent-ads">
         {ads.map((ad) => (
+          <div key={ad.id}>
           <Link href={`/ad/${ad.id}`} key={ad.id}>
             <AdCard
               id={ad.id}
@@ -41,7 +42,9 @@ const DisplayAds = ({ ads, title }: DisplayAdsType) => {
               location={ad.location}
               owner={ad.owner}
             />
-            <button
+            
+          </Link>
+          <button
               className="button"
               onClick={() => {
                 deleteAd(ad.id);
@@ -50,7 +53,7 @@ const DisplayAds = ({ ads, title }: DisplayAdsType) => {
               >
               Delete
             </button>
-          </Link>
+            </div>
         ))}
       </section>
     </>

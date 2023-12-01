@@ -1,91 +1,171 @@
-import axios from "axios";
-import { on } from "events";
-import { type } from "os";
 import { useState, useEffect } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import axios from "axios";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { Category } from "@/types/category";
+import { toast } from "react-toastify";
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_ALL_CATEGORIES } from "../../graphql/queries/queries";
+import { CREATE_NEW_AD } from "../../graphql/mutations/mutations";
 
-type category = {
-    id: number;
-    name: string;
+type Inputs = {
+  title: string;
+  price: string;
+  description: string;
+  owner: string;
+  imageUrl: string;
+  location: string;
+  category: string;
 };
 
-type inputs ={
-    title: string;
-    description: string;
-    owner: string;
-    price: number;
-    imageUrl: string;
-    location: string;
-    category: number;
-}
-
 const NewAd = () => {
-    const { register, handleSubmit } = useForm<inputs>();
-    const[categories, setCategories] = useState<category[]>([]);
-    useEffect(() => {
-    const fetchCategories = async () => {
-        try {
-          const result = await axios.get<category[]>(
-            "http://localhost:4000/category"
-        );
-        setCategories(result.data);  
-        } catch (e) {
-            console.log(e);
-        }
-    };
-    fetchCategories();
-    }, []);
+  const [file, setFile] = useState<File>();
+  const [imageURL, setImageURL] = useState<String>();
 
-    const onSubmit: SubmitHandler<inputs> = async (data) => {
-        try{
-            const response = await axios.post("http://localhost:4000/ad", data);
-            console.log(response.data);
-        } catch (err) {
-            console.error(err);
-        }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<Inputs>();
+
+  const { loading, error, data } = useQuery<{
+    allCategories: {
+      id: number;
+      name: string;
+    }[];
+  }>(GET_ALL_CATEGORIES);
+
+  const [
+    createNewAd,
+    { data: createAdData, loading: createAdLoading, error: createAdError },
+  ] = useMutation(CREATE_NEW_AD);
+
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    try {
+      const result = await createNewAd({
+        variables: {
+          adData: {
+            title: data.title,
+            description: data.description,
+            imageUrl: "http://localhost:8000" + imageURL,
+            location: data.location,
+            price: Number.parseInt(data.price),
+            owner: data.owner,
+            category: Number.parseInt(data.category),
+          },
+        },
+      });
+      console.log("result", result);
+      setImageURL(undefined);
+      setFile(undefined);
+      reset();
+      toast.success("New ad was added", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
     }
+  };
 
-    return (
-            <form
-            onSubmit={handleSubmit(onSubmit)}
-            >
-            <label>
-                Titre de l&apos;annonce: <br />
-                <input className="text-field" {...register("title")} />
-            </label> <br />
-            <label>
-                Description: <br />
-                <input className="text-field" {...register("description")} />
-            </label> <br />
-            <label>
-                Votre identifiant: <br />
-                <input className="text-field" {...register("owner")} />
-            </label> <br />
-            <label>
-                Prix: <br />
-                <input className="text-field" {...register("price")} />
-            </label> <br />
-            <label>
-                Image:<br />
-                <input className="text-field" {...register("imageUrl")} />
-            </label> <br />
-            <label>
-                Ville: <br />
-                <input className="text-field" {...register("location")} />
-            </label> <br />
-            <label>
-                Type: <br />
-            <select className="text-field" {...register("category")}>
-                {categories.map((el) => (
-                    <option value={el.id} key={el.id}>
-                        {el.name}
-                    </option>
-                ))}
-            </select>
-            </label>
-            <button className="button">Submit</button>
-            </form>
-    );
-}
+  return (
+    <div>
+      <input
+        type="file"
+        onChange={(e) => {
+          if (e.target.files) {
+            setFile(e.target.files[0]);
+          }
+        }}
+      />
+      <button
+        onClick={async (event) => {
+          event.preventDefault();
+          if (file) {
+            const url = "http://localhost:8000/upload";
+            const formData = new FormData();
+            formData.append("file", file, file.name);
+            try {
+              const response = await axios.post(url, formData);
+              setImageURL(response.data.filename);
+            } catch (err) {
+              console.log("error", err);
+            }
+          } else {
+            alert("select a file to upload");
+          }
+        }}
+      >
+        Upload Image
+      </button>
+      {imageURL ? (
+        <>
+          <br />
+          <img
+            width={"500"}
+            alt="uploadedImg"
+            src={"http://localhost:8000" + imageURL}
+          />
+          <br />
+        </>
+      ) : null}
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <label>
+          Titre de l&apos;annonce: <br />
+          <input className="text-field" {...register("title")} />
+        </label>
+        <br />
+        <label>
+          Prix: <br />
+          <input className="text-field" {...register("price")} />
+        </label>
+        <br />
+        <label>
+          Description: <br />
+          <input className="text-field" {...register("description")} />
+        </label>
+        <br />
+        <label>
+          Nom du vendeur: <br />
+          <input className="text-field" {...register("owner")} />
+        </label>
+        <br />
+        <label>
+          Ville: <br />
+          <input className="text-field" {...register("location")} />
+        </label>
+        <br />
+        <select {...register("category")}>
+          {data?.allCategories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+        <br />
+        <br />
+
+        <input className="button" type="submit" />
+      </form>
+    </div>
+  );
+};
 
 export default NewAd;

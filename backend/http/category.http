@@ -8,3 +8,25 @@ Content-Type: application/json
 {
     "name": "Vélos"
 }
+
+
+###
+
+PUT http://localhost:4000/category
+Content-Type: application/json
+
+{
+    "id":,
+    "newCategory": {
+        "name": "Vélos"
+    }
+}
+
+###
+
+DELETE http://localhost:4000/category
+Content-Type: application/json
+
+{
+    "id": 1
+}

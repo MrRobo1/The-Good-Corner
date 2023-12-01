@@ -1,33 +1,37 @@
 import "reflect-metadata";
-import express, { Express } from "express";
-import cors from "cors";
+import {buildSchema} from "type-graphql";
+import {ApolloServer} from "@apollo/server";
+import {startStandaloneServer} from "@apollo/server/standalone";
 import dataSource from "../config/db";
+import {CategoryResolver} from "./resolvers/Category"
+import { AdResolver } from "./resolvers/Ad";
+import { Category } from "./entities/category";
 
-import adsController from "./controllers/adsController";
-import categoryController from "./controllers/categoryControllers";
-import tagController from "./controllers/tagController";
 
-const app: Express = express();
-const port: number = 4000;
 
-  app.use(cors());
-  app.use(express.json());
+const start = async () => {
+  await dataSource.initialize();
+
+  const categories = await Category.find();
+  if (categories.length === 0) {
+    await Category.save({ name: "miscellaneous" });
+  }
   
-  app.get("/ad", adsController.read);
-  app.get("/ad/:id", adsController.readOne);
-  app.post("/ad", adsController.create);
-  app.delete("/ad", adsController.delete);
-  app.delete("/ad/:id", adsController.delete);
-  app.put("/ad", adsController.put);
+  const schema = await buildSchema({
+    resolvers: [CategoryResolver, AdResolver],
+  });
 
-  app.get("/category", categoryController.read);
-  app.post("/category", categoryController.create);
+  const server = new ApolloServer({
+    schema,
+  });
 
-  app.get("/tag", tagController.read);
-  app.post("/tag", tagController.create);
+  const { url } = await startStandaloneServer(server, {
+    listen: { port: 4000 },
+  });
 
+  console.log(`🚀  Server ready at: ${url}`);
+};
 
-  app.listen(port, async () => {
-    await dataSource.initialize();
-    console.log(`Example app listening on port ${port}`);
-});
+start();
+
+   

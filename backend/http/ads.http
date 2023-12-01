@@ -2,6 +2,12 @@ GET http://localhost:4000/ad
 
 ###
 
+###
+
+GET http://localhost:4000/ad?category=3
+
+###
+
 GET http://localhost:4000/ad/3
 
 ###

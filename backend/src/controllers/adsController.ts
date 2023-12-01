@@ -15,6 +15,14 @@ const adsController = {
                         tags: true,
                     },
                 });
+            } else if (req.query.category !== undefined) {
+                result = await Ad.find({
+                  where: { category: { name: Like(`%${req.query.category}%`) } },
+                  relations: {
+                    category: true,
+                    tags: true,
+                  },
+                });
             } else {
                 console.log("no title in query");
                 result = await Ad.find({
@@ -29,7 +37,9 @@ const adsController = {
             console.log(err);
             res.status(500).send("Error while reading the ads");
         }
-    },
+    },    
+            
+        
 
     readOne: async (req: Request, res: Response) => {
         try {
